@@ -1,0 +1,9 @@
+{
+  "name": "serp-analyzer",
+  "version": "1.0.0",
+  "description": "競合サイトのGoogle流入数を自動推定するツール",
+  "type": "module",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12"
+  }
+}

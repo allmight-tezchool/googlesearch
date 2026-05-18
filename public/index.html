@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>競合サイト Google流入数 自動推定ツール</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    background: #f5f7fa;
+    color: #222;
+    margin: 0;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .mode-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    background: #e9edf2;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .mode-tab.active { background: #2563eb; color: #fff; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444; }
+  input[type=text], textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  .btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover { background: #1d4ed8; }
+  .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+  .hint { font-size: 12px; color: #666; margin-top: 4px; }
+  .result-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+    border-left: 4px solid #2563eb;
+  }
+  .result-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; word-break: break-all; }
+  .result-page-title { font-size: 13px; color: #666; margin-bottom: 12px; }
+  .result-big { font-size: 32px; font-weight: 800; color: #2563eb; }
+  .result-big-unit { font-size: 14px; color: #666; margin-left: 4px; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .result-cell { background: #f5f7fa; padding: 10px; border-radius: 6px; }
+  .result-cell-label { font-size: 11px; color: #666; }
+  .result-cell-value { font-size: 18px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+  th { background: #f5f7fa; font-weight: 600; }
+  .warning {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .error-msg {
+    background: #fee2e2;
+    border-left: 4px solid #ef4444;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .progress {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none; }
+  .small { font-size: 12px; color: #666; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-size: 13px; color: #2563eb; }
+  .rank-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .rank-top { background: #dcfce7; color: #166534; }
+  .rank-mid { background: #fef3c7; color: #92400e; }
+  .rank-low { background: #f1f5f9; color: #475569; }
+  .rank-none { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>競合サイト Google流入数 自動推定ツール</h1>
+  <div class="subtitle">URLを入れるだけで、キーワード抽出から順位確認まで全自動で実行します</div>
+
+  <div class="warning">
+    <strong>注意:</strong> 推定値です。精度の参考として「ランクが取れたキーワードの数」と「ランク」を併せてご確認ください。<br>
+    1サイトの分析に20〜40秒かかります（Googleへのアクセスをゆっくり行うため）。
+  </div>
+
+  <div class="card">
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="single" onclick="switchMode('single')">シングルURL</div>
+      <div class="mode-tab" data-mode="multi" onclick="switchMode('multi')">複数URL比較</div>
+    </div>
+
+    <div id="single-mode">
+      <label>競合サイトのURL</label>
+      <input type="text" id="single-url" placeholder="例: https://example.co.jp" value="">
+      <div class="hint">https:// から始まるURLを入れてください</div>
+      <div style="margin-top: 20px;">
+        <button class="btn" id="single-btn" onclick="runSingle()">分析開始</button>
+      </div>
+    </div>
+
+    <div id="multi-mode" class="hidden">
+      <label>複数URL（1行に1つ、最大5サイト）</label>
+      <textarea id="multi-urls" placeholder="https://example1.co.jp&#10;https://example2.co.jp&#10;https://example3.co.jp"></textarea>
+      <div class="hint">サイトごとに順次分析します。5サイトで合計2〜4分かかります。</div>
+      <div style="margin-top: 20px;">
+        <button class="btn" id="multi-btn" onclick="runMulti()">まとめて分析開始</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="progress-area"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+function switchMode(mode) {
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.mode-tab[data-mode="${mode}"]`).classList.add('active');
+  document.getElementById('single-mode').classList.toggle('hidden', mode !== 'single');
+  document.getElementById('multi-mode').classList.toggle('hidden', mode !== 'multi');
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('progress-area').innerHTML = '';
+}
+
+function formatNumber(n) { return n.toLocaleString('ja-JP'); }
+
+function rankBadge(rank) {
+  if (rank === null || rank === undefined) {
+    return '<span class="rank-badge rank-none">圏外</span>';
+  }
+  if (rank <= 3) return `<span class="rank-badge rank-top">${rank}位</span>`;
+  if (rank <= 10) return `<span class="rank-badge rank-mid">${rank}位</span>`;
+  return `<span class="rank-badge rank-low">${rank}位</span>`;
+}
+
+function showProgress(msg) {
+  document.getElementById('progress-area').innerHTML =
+    `<div class="progress"><span class="spinner"></span>${msg}</div>`;
+}
+function clearProgress() {
+  document.getElementById('progress-area').innerHTML = '';
+}
+function showError(msg) {
+  document.getElementById('progress-area').innerHTML =
+    `<div class="error-msg">${msg}</div>`;
+}
+
+async function analyzeOne(url) {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'リクエスト失敗' }));
+    throw new Error(err.error || `エラー ${res.status}`);
+  }
+  return await res.json();
+}
+
+function renderResult(data, container) {
+  const card = document.createElement('div');
+  card.className = 'result-card';
+
+  if (data.warning) {
+    card.innerHTML = `
+      <div class="result-title">${data.url}</div>
+      <div class="result-page-title">${data.title || ''}</div>
+      <div class="error-msg">${data.warning}</div>
+    `;
+    container.appendChild(card);
+    return;
+  }
+
+  const r = data.result;
+  card.innerHTML = `
+    <div class="result-title">${data.url}</div>
+    <div class="result-page-title">${data.title || ''}</div>
+    <div>
+      <span class="result-big">${formatNumber(r.estimatedTotal)}</span>
+      <span class="result-big-unit">/ 月 (推定Google検索流入数)</span>
+    </div>
+    <div class="result-grid">
+      <div class="result-cell">
+        <div class="result-cell-label">捕捉キーワード合計流入</div>
+        <div class="result-cell-value">${formatNumber(r.captured)}</div>
+      </div>
+      <div class="result-cell">
+        <div class="result-cell-label">分析キーワード数</div>
+        <div class="result-cell-value">${data.keywordsCount}</div>
+      </div>
+      <div class="result-cell">
+        <div class="result-cell-label">日平均換算</div>
+        <div class="result-cell-value">${formatNumber(Math.round(r.estimatedTotal/30))} / 日</div>
+      </div>
+    </div>
+    <details open>
+      <summary>キーワード別の内訳</summary>
+      <table>
+        <thead><tr><th>キーワード</th><th>順位</th><th>推定検索数/月</th><th>CTR</th><th>流入数/月</th></tr></thead>
+        <tbody>
+          ${r.detail.map(d => `
+            <tr>
+              <td>${d.keyword}</td>
+              <td>${rankBadge(d.rank)}</td>
+              <td>${formatNumber(d.estimatedVolume)}</td>
+              <td>${d.ctr}</td>
+              <td><strong>${formatNumber(d.estimatedTraffic)}</strong></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="small" style="margin-top: 8px;">
+        ※ 圏外 = 20位以内に出てこなかったキーワード。<br>
+        ※ 推定総流入 = 捕捉合計 ÷ 30%（捕捉率の前提）。
+        ${data.blocked > 0 ? '<br>※ ' + data.blocked + '件のGoogle検索でブロックを検知しました。結果が一部欠けている可能性があります。' : ''}
+      </div>
+    </details>
+  `;
+  container.appendChild(card);
+}
+
+async function runSingle() {
+  const url = document.getElementById('single-url').value.trim();
+  if (!url) { alert('URLを入力してください'); return; }
+
+  const btn = document.getElementById('single-btn');
+  btn.disabled = true;
+  document.getElementById('results').innerHTML = '';
+  showProgress(`${url} を分析中... (20〜40秒お待ちください)`);
+
+  try {
+    const data = await analyzeOne(url);
+    clearProgress();
+    renderResult(data, document.getElementById('results'));
+  } catch (e) {
+    showError(`分析に失敗しました: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function runMulti() {
+  const text = document.getElementById('multi-urls').value;
+  const urls = text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5);
+  if (urls.length === 0) { alert('URLを入力してください'); return; }
+
+  const btn = document.getElementById('multi-btn');
+  btn.disabled = true;
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  const summary = [];
+  for (let i = 0; i < urls.length; i++) {
+    showProgress(`(${i+1}/${urls.length}) ${urls[i]} を分析中...`);
+    try {
+      const data = await analyzeOne(urls[i]);
+      renderResult(data, results);
+      if (data.result) summary.push({ url: urls[i], total: data.result.estimatedTotal });
+    } catch (e) {
+      const errCard = document.createElement('div');
+      errCard.className = 'result-card';
+      errCard.innerHTML = `
+        <div class="result-title">${urls[i]}</div>
+        <div class="error-msg">分析失敗: ${e.message}</div>
+      `;
+      results.appendChild(errCard);
+    }
+  }
+  clearProgress();
+
+  if (summary.length >= 2) {
+    summary.sort((a,b) => b.total - a.total);
+    const sumCard = document.createElement('div');
+    sumCard.className = 'result-card';
+    sumCard.style.borderLeftColor = '#10b981';
+    sumCard.innerHTML = `
+      <div class="result-title">比較サマリー（流入推定の多い順）</div>
+      <table>
+        <thead><tr><th>順位</th><th>サイト</th><th>推定月間流入</th></tr></thead>
+        <tbody>
+          ${summary.map((s,i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td style="word-break:break-all;">${s.url}</td>
+              <td><strong>${formatNumber(s.total)}</strong> / 月</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    results.insertBefore(sumCard, results.firstChild);
+  }
+
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
