@@ -16,7 +16,7 @@ st.set_page_config(
     page_title="SEED - 未来の森",
     page_icon="🌳",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # 1日あたりのたね蒔き上限(レートリミット)
@@ -162,12 +162,31 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ===== サイドバー: 表示モード切替 =====
-view_mode = st.sidebar.radio(
-    "🌲 見る森",
-    ["🌒 静寂の森", "🌞 ひらけた森"],
-    index=0,
-)
+# ===== メイン上部: 森の切替ボタン(スマホでも押しやすい)=====
+if "view_mode" not in st.session_state:
+    st.session_state.view_mode = "🌒 静寂の森"
+
+col_view1, col_view2 = st.columns(2)
+with col_view1:
+    if st.button(
+        "🌒 静寂の森",
+        use_container_width=True,
+        type="primary" if st.session_state.view_mode == "🌒 静寂の森" else "secondary",
+        key="view_quiet",
+    ):
+        st.session_state.view_mode = "🌒 静寂の森"
+        st.rerun()
+with col_view2:
+    if st.button(
+        "🌞 ひらけた森",
+        use_container_width=True,
+        type="primary" if st.session_state.view_mode == "🌞 ひらけた森" else "secondary",
+        key="view_open",
+    ):
+        st.session_state.view_mode = "🌞 ひらけた森"
+        st.rerun()
+
+view_mode = st.session_state.view_mode
 
 # どのデータを引いてくるか決定
 if view_mode == "🌒 静寂の森":
@@ -502,6 +521,18 @@ with st.expander(f"🍂 {total_label}({len(seeds_rows)}本)", expanded=False):
                         )
                         st.markdown(tag_html, unsafe_allow_html=True)
                     keeper_msg = row_get(row, "keeper_message", "")
+                    if keeper_msg:
+                        st.markdown(
+                            '<div class="keeper-msg">🍃 ' + keeper_msg + '</div>',
+                            unsafe_allow_html=True,
+                        )
+                    show_key = "show_knowledge_" + str(row["id"])
+                    if st.toggle("📚 知識展開を読む", key=show_key):
+                        st.markdown(row["ai_response"])
+                    if seed_user_id == USER_ID:
+                        if st.button("🍂 このたねを忘れる", key="del_" + str(row["id"])):
+                            db.delete_seed(row["id"], user_id=USER_ID)
+                            st.rerun()
                     if keeper_msg:
                         st.markdown(
                             '<div class="keeper-msg">🍃 ' + keeper_msg + '</div>',
