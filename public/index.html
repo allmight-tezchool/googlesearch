@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>競合サイト Google流入数 自動推定ツール</title>
+<title>競合 MEO（Googleマップ）調査ツール</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -37,7 +37,7 @@
   }
   .mode-tab.active { background: #2563eb; color: #fff; }
   label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444; }
-  input[type=text], textarea {
+  input[type=text] {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #d1d5db;
@@ -45,7 +45,6 @@
     font-size: 14px;
     font-family: inherit;
   }
-  textarea { min-height: 100px; resize: vertical; }
   .btn {
     background: #2563eb;
     color: #fff;
@@ -66,14 +65,10 @@
     margin-bottom: 12px;
     border-left: 4px solid #2563eb;
   }
-  .result-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; word-break: break-all; }
-  .result-page-title { font-size: 13px; color: #666; margin-bottom: 12px; }
-  .result-big { font-size: 32px; font-weight: 800; color: #2563eb; }
-  .result-big-unit { font-size: 14px; color: #666; margin-left: 4px; }
-  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-  .result-cell { background: #f5f7fa; padding: 10px; border-radius: 6px; }
-  .result-cell-label { font-size: 11px; color: #666; }
-  .result-cell-value { font-size: 18px; font-weight: 700; }
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+  .summary-cell { background: #f5f7fa; padding: 12px; border-radius: 6px; }
+  .summary-label { font-size: 11px; color: #666; }
+  .summary-value { font-size: 22px; font-weight: 800; color: #2563eb; }
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
   th { background: #f5f7fa; font-weight: 600; }
@@ -114,52 +109,71 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .hidden { display: none; }
   .small { font-size: 12px; color: #666; }
+  .stars { color: #f59e0b; font-weight: 700; }
+  .rank-num {
+    display: inline-block;
+    min-width: 24px;
+    text-align: center;
+    background: #2563eb;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+    padding: 1px 4px;
+  }
+  .company-block {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .company-name { font-size: 16px; font-weight: 700; }
+  .company-meta { font-size: 12px; color: #666; margin: 4px 0; }
+  .review {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .review-head { font-weight: 600; margin-bottom: 4px; }
   details { margin-top: 10px; }
   summary { cursor: pointer; font-size: 13px; color: #2563eb; }
-  .rank-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .rank-top { background: #dcfce7; color: #166534; }
-  .rank-mid { background: #fef3c7; color: #92400e; }
-  .rank-low { background: #f1f5f9; color: #475569; }
-  .rank-none { background: #fee2e2; color: #991b1b; }
+  a { color: #2563eb; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>競合サイト Google流入数 自動推定ツール</h1>
-  <div class="subtitle">URLを入れるだけで、キーワード抽出から順位確認まで全自動で実行します</div>
+  <h1>競合 MEO（Googleマップ）調査ツール</h1>
+  <div class="subtitle">Google Places APIで、競合のマップ上の評価・口コミ・表示順位を調べます</div>
 
   <div class="warning">
-    <strong>注意:</strong> 推定値です。精度の参考として「ランクが取れたキーワードの数」と「ランク」を併せてご確認ください。<br>
-    1サイトの分析に20〜40秒かかります（Googleへのアクセスをゆっくり行うため）。
+    <strong>使い方:</strong> 「地域＋業種」で検索すると競合一覧が順位付きで出ます。「会社名」で検索するとその会社の口コミ詳細が見られます。<br>
+    データはGoogleマップの公式情報です。表示順位は検索時点・サーバー地域による目安です。
   </div>
 
   <div class="card">
     <div class="mode-tabs">
-      <div class="mode-tab active" data-mode="single" onclick="switchMode('single')">シングルURL</div>
-      <div class="mode-tab" data-mode="multi" onclick="switchMode('multi')">複数URL比較</div>
+      <div class="mode-tab active" data-mode="area" onclick="switchMode('area')">地域＋業種で検索</div>
+      <div class="mode-tab" data-mode="company" onclick="switchMode('company')">会社名で検索</div>
     </div>
 
-    <div id="single-mode">
-      <label>競合サイトのURL</label>
-      <input type="text" id="single-url" placeholder="例: https://example.co.jp" value="">
-      <div class="hint">https:// から始まるURLを入れてください</div>
+    <!-- 地域検索モード -->
+    <div id="area-mode">
+      <label>地域名＋業種</label>
+      <input type="text" id="area-query" placeholder="例: 五反田 SES / 渋谷 人材派遣 / 新宿 システム開発">
+      <div class="hint">「地域名 業種」のように、スペース区切りで入力してください</div>
       <div style="margin-top: 20px;">
-        <button class="btn" id="single-btn" onclick="runSingle()">分析開始</button>
+        <button class="btn" id="area-btn" onclick="runArea()">競合を調べる</button>
       </div>
     </div>
 
-    <div id="multi-mode" class="hidden">
-      <label>複数URL（1行に1つ、最大5サイト）</label>
-      <textarea id="multi-urls" placeholder="https://example1.co.jp&#10;https://example2.co.jp&#10;https://example3.co.jp"></textarea>
-      <div class="hint">サイトごとに順次分析します。5サイトで合計2〜4分かかります。</div>
+    <!-- 会社名検索モード -->
+    <div id="company-mode" class="hidden">
+      <label>会社名・店舗名</label>
+      <input type="text" id="company-query" placeholder="例: 株式会社◯◯ / ◯◯ 五反田">
+      <div class="hint">会社名だけだと複数ヒットすることがあります。地域名を足すと絞れます。</div>
       <div style="margin-top: 20px;">
-        <button class="btn" id="multi-btn" onclick="runMulti()">まとめて分析開始</button>
+        <button class="btn" id="company-btn" onclick="runCompany()">この会社を調べる</button>
       </div>
     </div>
   </div>
@@ -172,21 +186,17 @@
 function switchMode(mode) {
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`.mode-tab[data-mode="${mode}"]`).classList.add('active');
-  document.getElementById('single-mode').classList.toggle('hidden', mode !== 'single');
-  document.getElementById('multi-mode').classList.toggle('hidden', mode !== 'multi');
+  document.getElementById('area-mode').classList.toggle('hidden', mode !== 'area');
+  document.getElementById('company-mode').classList.toggle('hidden', mode !== 'company');
   document.getElementById('results').innerHTML = '';
   document.getElementById('progress-area').innerHTML = '';
 }
 
-function formatNumber(n) { return n.toLocaleString('ja-JP'); }
+function formatNumber(n) { return (n || 0).toLocaleString('ja-JP'); }
 
-function rankBadge(rank) {
-  if (rank === null || rank === undefined) {
-    return '<span class="rank-badge rank-none">圏外</span>';
-  }
-  if (rank <= 3) return `<span class="rank-badge rank-top">${rank}位</span>`;
-  if (rank <= 10) return `<span class="rank-badge rank-mid">${rank}位</span>`;
-  return `<span class="rank-badge rank-low">${rank}位</span>`;
+function starDisplay(rating) {
+  if (rating === null || rating === undefined) return '<span class="small">評価なし</span>';
+  return `<span class="stars">★ ${rating.toFixed(1)}</span>`;
 }
 
 function showProgress(msg) {
@@ -201,11 +211,16 @@ function showError(msg) {
     `<div class="error-msg">${msg}</div>`;
 }
 
-async function analyzeOne(url) {
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function callApi(mode, query) {
   const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ mode, query }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'リクエスト失敗' }));
@@ -214,141 +229,161 @@ async function analyzeOne(url) {
   return await res.json();
 }
 
-function renderResult(data, container) {
+// ============================================
+// 地域検索の結果表示
+// ============================================
+function renderAreaResult(data) {
+  const container = document.getElementById('results');
   const card = document.createElement('div');
   card.className = 'result-card';
 
-  if (data.warning) {
+  if (data.count === 0) {
     card.innerHTML = `
-      <div class="result-title">${data.url}</div>
-      <div class="result-page-title">${data.title || ''}</div>
-      <div class="error-msg">${data.warning}</div>
+      <div style="font-weight:700;">「${escapeHtml(data.query)}」の検索結果</div>
+      <div class="error-msg">該当する競合が見つかりませんでした。検索ワードを変えてみてください。</div>
     `;
     container.appendChild(card);
     return;
   }
 
-  const r = data.result;
   card.innerHTML = `
-    <div class="result-title">${data.url}</div>
-    <div class="result-page-title">${data.title || ''}</div>
-    <div>
-      <span class="result-big">${formatNumber(r.estimatedTotal)}</span>
-      <span class="result-big-unit">/ 月 (推定Google検索流入数)</span>
-    </div>
-    <div class="result-grid">
-      <div class="result-cell">
-        <div class="result-cell-label">捕捉キーワード合計流入</div>
-        <div class="result-cell-value">${formatNumber(r.captured)}</div>
+    <div style="font-weight:700; font-size:16px;">「${escapeHtml(data.query)}」の競合一覧（${data.count}件）</div>
+    <div class="summary-row">
+      <div class="summary-cell">
+        <div class="summary-label">ヒット件数</div>
+        <div class="summary-value">${data.count}</div>
       </div>
-      <div class="result-cell">
-        <div class="result-cell-label">分析キーワード数</div>
-        <div class="result-cell-value">${data.keywordsCount}</div>
+      <div class="summary-cell">
+        <div class="summary-label">平均評価</div>
+        <div class="summary-value">${data.summary.averageRating !== null ? '★' + data.summary.averageRating : '-'}</div>
       </div>
-      <div class="result-cell">
-        <div class="result-cell-label">日平均換算</div>
-        <div class="result-cell-value">${formatNumber(Math.round(r.estimatedTotal/30))} / 日</div>
+      <div class="summary-cell">
+        <div class="summary-label">口コミ総数</div>
+        <div class="summary-value">${formatNumber(data.summary.totalReviewCount)}</div>
       </div>
     </div>
-    <details open>
-      <summary>キーワード別の内訳</summary>
-      <table>
-        <thead><tr><th>キーワード</th><th>順位</th><th>推定検索数/月</th><th>CTR</th><th>流入数/月</th></tr></thead>
-        <tbody>
-          ${r.detail.map(d => `
-            <tr>
-              <td>${d.keyword}</td>
-              <td>${rankBadge(d.rank)}</td>
-              <td>${formatNumber(d.estimatedVolume)}</td>
-              <td>${d.ctr}</td>
-              <td><strong>${formatNumber(d.estimatedTraffic)}</strong></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div class="small" style="margin-top: 8px;">
-        ※ 圏外 = 20位以内に出てこなかったキーワード。<br>
-        ※ 推定総流入 = 捕捉合計 ÷ 30%（捕捉率の前提）。
-        ${data.blocked > 0 ? '<br>※ ' + data.blocked + '件のGoogle検索でブロックを検知しました。結果が一部欠けている可能性があります。' : ''}
-      </div>
-    </details>
+    <table>
+      <thead><tr><th>順位</th><th>会社・店舗名</th><th>評価</th><th>口コミ数</th><th>住所</th><th>リンク</th></tr></thead>
+      <tbody>
+        ${data.results.map(r => `
+          <tr>
+            <td><span class="rank-num">${r.rank}</span></td>
+            <td>
+              <strong>${escapeHtml(r.name)}</strong>
+              ${r.category ? '<br><span class="small">' + escapeHtml(r.category) + '</span>' : ''}
+              ${r.businessStatus && r.businessStatus !== 'OPERATIONAL' ? '<br><span class="small" style="color:#ef4444;">※' + escapeHtml(r.businessStatus) + '</span>' : ''}
+            </td>
+            <td>${starDisplay(r.rating)}</td>
+            <td>${formatNumber(r.reviewCount)}</td>
+            <td class="small">${escapeHtml(r.address)}</td>
+            <td>
+              ${r.mapsUri ? '<a href="' + r.mapsUri + '" target="_blank">地図</a>' : ''}
+              ${r.website ? ' / <a href="' + r.website + '" target="_blank">HP</a>' : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div class="small" style="margin-top:8px;">
+      ※ 順位 = Googleマップのテキスト検索で返ってきた表示順。検索する人の現在地により実際の順位は変動します。
+    </div>
   `;
   container.appendChild(card);
 }
 
-async function runSingle() {
-  const url = document.getElementById('single-url').value.trim();
-  if (!url) { alert('URLを入力してください'); return; }
+// ============================================
+// 会社名検索の結果表示
+// ============================================
+function renderCompanyResult(data) {
+  const container = document.getElementById('results');
+  const card = document.createElement('div');
+  card.className = 'result-card';
 
-  const btn = document.getElementById('single-btn');
+  if (data.count === 0) {
+    card.innerHTML = `
+      <div style="font-weight:700;">「${escapeHtml(data.query)}」の検索結果</div>
+      <div class="error-msg">${escapeHtml(data.warning || '見つかりませんでした。')}</div>
+    `;
+    container.appendChild(card);
+    return;
+  }
+
+  card.innerHTML = `
+    <div style="font-weight:700; font-size:16px; margin-bottom:8px;">「${escapeHtml(data.query)}」の検索結果（${data.count}件）</div>
+    ${data.results.map(r => `
+      <div class="company-block">
+        <div class="company-name">${escapeHtml(r.name)} ${starDisplay(r.rating)} <span class="small">（口コミ${formatNumber(r.reviewCount)}件）</span></div>
+        <div class="company-meta">${escapeHtml(r.category)}</div>
+        <div class="company-meta">📍 ${escapeHtml(r.address)}</div>
+        ${r.phone ? '<div class="company-meta">☎ ' + escapeHtml(r.phone) + '</div>' : ''}
+        <div class="company-meta">
+          ${r.mapsUri ? '<a href="' + r.mapsUri + '" target="_blank">Googleマップで見る</a>' : ''}
+          ${r.website ? ' / <a href="' + r.website + '" target="_blank">公式サイト</a>' : ''}
+        </div>
+        ${r.openingHours && r.openingHours.length > 0 ? `
+          <details>
+            <summary>営業時間</summary>
+            <div class="small">${r.openingHours.map(h => escapeHtml(h)).join('<br>')}</div>
+          </details>
+        ` : ''}
+        ${r.reviews && r.reviews.length > 0 ? `
+          <details open>
+            <summary>口コミ（${r.reviews.length}件）</summary>
+            ${r.reviews.map(rv => `
+              <div class="review">
+                <div class="review-head">${starDisplay(rv.rating)} ${escapeHtml(rv.author)} <span class="small">${escapeHtml(rv.relativeTime)}</span></div>
+                <div>${escapeHtml(rv.text) || '<span class="small">（本文なし）</span>'}</div>
+              </div>
+            `).join('')}
+          </details>
+        ` : '<div class="small" style="margin-top:8px;">口コミの取得データがありませんでした。</div>'}
+      </div>
+    `).join('')}
+  `;
+  container.appendChild(card);
+}
+
+// ============================================
+// 実行ハンドラ
+// ============================================
+async function runArea() {
+  const query = document.getElementById('area-query').value.trim();
+  if (!query) { alert('地域名＋業種を入力してください'); return; }
+
+  const btn = document.getElementById('area-btn');
   btn.disabled = true;
   document.getElementById('results').innerHTML = '';
-  showProgress(`${url} を分析中... (20〜40秒お待ちください)`);
+  showProgress(`「${query}」の競合を検索中...`);
 
   try {
-    const data = await analyzeOne(url);
+    const data = await callApi('area', query);
     clearProgress();
-    renderResult(data, document.getElementById('results'));
+    renderAreaResult(data);
   } catch (e) {
-    showError(`分析に失敗しました: ${e.message}`);
+    showError(`調査に失敗しました: ${e.message}`);
   } finally {
     btn.disabled = false;
   }
 }
 
-async function runMulti() {
-  const text = document.getElementById('multi-urls').value;
-  const urls = text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5);
-  if (urls.length === 0) { alert('URLを入力してください'); return; }
+async function runCompany() {
+  const query = document.getElementById('company-query').value.trim();
+  if (!query) { alert('会社名を入力してください'); return; }
 
-  const btn = document.getElementById('multi-btn');
+  const btn = document.getElementById('company-btn');
   btn.disabled = true;
-  const results = document.getElementById('results');
-  results.innerHTML = '';
+  document.getElementById('results').innerHTML = '';
+  showProgress(`「${query}」を検索中...`);
 
-  const summary = [];
-  for (let i = 0; i < urls.length; i++) {
-    showProgress(`(${i+1}/${urls.length}) ${urls[i]} を分析中...`);
-    try {
-      const data = await analyzeOne(urls[i]);
-      renderResult(data, results);
-      if (data.result) summary.push({ url: urls[i], total: data.result.estimatedTotal });
-    } catch (e) {
-      const errCard = document.createElement('div');
-      errCard.className = 'result-card';
-      errCard.innerHTML = `
-        <div class="result-title">${urls[i]}</div>
-        <div class="error-msg">分析失敗: ${e.message}</div>
-      `;
-      results.appendChild(errCard);
-    }
+  try {
+    const data = await callApi('company', query);
+    clearProgress();
+    renderCompanyResult(data);
+  } catch (e) {
+    showError(`調査に失敗しました: ${e.message}`);
+  } finally {
+    btn.disabled = false;
   }
-  clearProgress();
-
-  if (summary.length >= 2) {
-    summary.sort((a,b) => b.total - a.total);
-    const sumCard = document.createElement('div');
-    sumCard.className = 'result-card';
-    sumCard.style.borderLeftColor = '#10b981';
-    sumCard.innerHTML = `
-      <div class="result-title">比較サマリー（流入推定の多い順）</div>
-      <table>
-        <thead><tr><th>順位</th><th>サイト</th><th>推定月間流入</th></tr></thead>
-        <tbody>
-          ${summary.map((s,i) => `
-            <tr>
-              <td>${i+1}</td>
-              <td style="word-break:break-all;">${s.url}</td>
-              <td><strong>${formatNumber(s.total)}</strong> / 月</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-    results.insertBefore(sumCard, results.firstChild);
-  }
-
-  btn.disabled = false;
 }
 </script>
 </body>
